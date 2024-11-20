@@ -3,6 +3,7 @@ import time
 
 import pydirectinput
 
+from _dict import *
 from checks import *
 
 """
@@ -180,6 +181,38 @@ class Mouse(object):
         return True
 
     @staticmethod
+    def hold_re(
+            x: int = None,
+            y: int = None,
+            button: int = 0,
+            before_time: float = global_time,
+            after_time: float = global_time,
+    ) -> bool:
+        """
+        反转状态(不知是否要把down和up删掉)
+        """
+        if (
+                (type_check(x, 'int') is False and x is not None) or
+                (type_check(y, 'int') is False and y is not None) or
+                (type_check(button, 'int') is False or button < 0 or button > 2) or
+                (type_check(before_time, 'float') is False or before_time < 0) or
+                (type_check(after_time, 'float') is False or after_time < 0)
+        ):
+            print('未按照标准提供值')
+            return False
+
+        time.sleep(before_time)
+
+        if holds[f'mouse_{button}']:
+            pydirectinput.mouseUp(x, y, button=mouse_button[button])
+            holds[f'mouse_{button}'] = False
+        else:
+            pydirectinput.mouseDown(x, y, button=mouse_button[button])
+            holds[f'mouse_{button}'] = True
+
+        time.sleep(after_time)
+
+    @staticmethod
     def drag(
             start_x: int = None,
             start_y: int = None,
@@ -282,7 +315,6 @@ class Key(object):
     loop_before_time循环执行前等待(在循环内)
     loop_after_time循环执行后等待(在循环内)
     """
-
     @staticmethod
     def down(
             key: int,
@@ -349,143 +381,197 @@ class Key(object):
 
         return True
 
-
-def key_hold_up(keys: int | list[int]) -> bool:
-    """
-    只接受小写&功能键
-    """
-    keys = keys_check(keys)
-    if keys is False:
-        return False
-
-    # 去重
-    down = []
-    for s in keys:
-        if not s in down:
-            down.append(s)
-    keys = down
-
-    keys = key_int_dict_check(keys)
-    if keys is False:
-        return False
-
-    for s in keys:
-        if holds[f'key_{s}']:
-            pydirectinput.keyUp(s)
-            holds[f'key_{s}'] = False
-        else:
-            print(f'key:{s} no hold')
+    @staticmethod
+    def hold_up(
+            key: int,
+            before_time: float = global_time,
+            after_time: float = global_time,
+    ) -> bool:
+        if (
+                (type_check(key, 'int') is False) or
+                (type_check(before_time, 'float') is False) or
+                (type_check(after_time, 'float') is False)
+        ):
+            print('未按照标准提供值')
+            return False
+        if not key in key_button.keys():
+            print('无此key,检查是否输入错误')
+            return False
+        if holds[f'key_{key_button[key]}'] is False:
+            print('按键未被按住')
             return False
 
-    return True
+        time.sleep(before_time)
 
+        pydirectinput.keyUp(key_button[key])
+        holds[f'key_{key_button[key]}'] = False
 
-# def key_all(w_str: str, loop: int = 1, t_time: float = 0.0, t_time_down: float = 0.0) -> bool:
-#     """
-#     loop次数默认为1
-#     t_time_down执行前等待
-#     """
-#     if not type_check(w_str, 'str'):
-#         print('str!')
-#         return False
-#
-#     if not type_check(t_time, 'float'):
-#         print('t_time is float')
-#         return False
-#     elif t_time < 0:
-#         print('t_time >= 0')
-#         return False
-#
-#     if not type_check(t_time_down, 'float'):
-#         print('t_time_down is float')
-#         return False
-#     elif t_time_down < 0:
-#         print('t_time_down >= 0')
-#         return False
-#
-#     t = 0
-#     time.sleep(t_time_down)
-#     while t < loop:
-#         for s in w_str:
-#             try:
-#                 if s in re_key.keys():
-#                     key_down(re_key[s], t_time=t_time)
-#
-#                 elif s in key_shift.keys():
-#                     key_hold_down(104)
-#                     key_down(key_shift[s], t_time=t_time)
-#                     key_hold_up(104)
-#
-#                 elif s in key_cn.keys():
-#                     key_down(104)
-#                     key_hold_down(104)
-#                     key_down(key_cn[s], t_time=t_time)
-#                     key_hold_up(104)
-#                     key_down(104)
-#
-#                 elif s in key_cn_shift.keys():
-#                     key_down(104)
-#                     key_hold_down(104)
-#                     key_down(key_cn_shift[s], t_time=t_time)
-#                     key_hold_up(104)
-#                     key_down(104)
-#
-#                 else:
-#                     print(f'no key:{s}')
-#                     return False
-#
-#             except Exception as e:
-#                 print(e)
-#                 return False
-#
-#         t += 1
-#
-#     return True
+        time.sleep(after_time)
 
+        return True
 
-def key_re_int(w_str: str | list) -> bool | list[int]:
-    """
-    用来检查输入是否存在于支持字典中并返回bool or list[int]
-    """
-    re = []
-    if type_check(w_str, 'str'):
-        w_str = [w_str]
-    elif not type_check(w_str, 'list'):
-        print('str or list')
-        return False
+    @staticmethod
+    def hold_re(
+            key: int,
+            before_time: float = global_time,
+            after_time: float = global_time,
+    ) -> bool:
+        if (
+                (type_check(key, 'int') is False) or
+                (type_check(before_time, 'float') is False) or
+                (type_check(after_time, 'float') is False)
+        ):
+            print('未按照标准提供值')
+            return False
+        if not key in key_button.keys():
+            print('无此key,检查是否输入错误')
+            return False
 
-    for s in w_str:
-        try:
-            if s in re_key.keys():
-                re.append(re_key[s])
+        time.sleep(before_time)
 
-            elif s in key_shift.keys():
-                re.append(key_shift[s])
+        if holds[f'key_{key_button[key]}'] is False:
+            pydirectinput.keyDown(key_button[key])
+            holds[f'key_{key_button[key]}'] = True
+        else:
+            pydirectinput.keyUp(key_button[key])
+            holds[f'key_{key_button[key]}'] = False
 
-            elif s in key_cn.keys():
-                re.append(key_cn[s])
+        time.sleep(after_time)
 
-            elif s in key_cn_shift.keys():
-                re.append(key_cn[s])
+        return True
 
+    class Down(object):
+        """
+        基于down函数的补充
+        中文暂不支持(没想好怎么写)
+        """
+
+        @staticmethod
+        def all(
+                key: int | list,
+                loop: int = 1,
+                before_time: float = global_time,
+                after_time: float = global_time,
+                loop_before_time: float = global_time,
+                loop_after_time: float = global_time,
+                down_before_time: float = global_time,
+                down_after_time: float = global_time,
+                in_key_check: bool = True
+        ) -> bool:
+            """
+            全部,但要求全数字
+            down_*_time是在按键间的等待
+            """
+            if (
+                    (type_check(key, 'int') is False and type_check(key, 'list') is False) or
+                    (type_check(loop, 'int') is False) or
+                    (type_check(before_time, 'float') is False) or
+                    (type_check(after_time, 'float') is False) or
+                    (type_check(loop_before_time, 'float') is False) or
+                    (type_check(loop_after_time, 'float') is False) or
+                    (type_check(down_before_time, 'float') is False) or
+                    (type_check(down_after_time, 'float') is False) or
+                    (type_check(in_key_check, 'bool') is False)
+            ):
+                print('未按照标准提供值')
+                return False
+            if type_check(key, 'int'):
+                key = [key]
+            if in_key_check:
+                for k in key:
+                    if not k in key_button.keys():
+                        print('无此key,检查是否输入错误')
+                        return False
+
+            time.sleep(before_time)
+
+            for i in range(loop):
+                print(f'\\{i}\\')
+                time.sleep(loop_before_time)
+
+                for k in key:
+                    Key.down(k, after_time=down_after_time, before_time=down_before_time)
+
+                time.sleep(loop_after_time)
+
+            time.sleep(after_time)
+
+            return True
+
+        @staticmethod
+        def all_shift(
+                key: int | list,
+                loop: int = 1,
+                before_time: float = global_time,
+                after_time: float = global_time,
+                loop_before_time: float = global_time,
+                loop_after_time: float = global_time,
+                down_before_time: float = global_time,
+                down_after_time: float = global_time,
+                in_key_check: bool = True
+        ) -> bool:
+            """
+            仅仅只是加个shift罢了
+            检查等均由all执行
+            需要注意在此期间shift都是处于按下状态!
+            """
+            if holds['key_shift'] is False:
+                Key.hold_down(re_key['shift'])
+
+            _bool = Key.Down.all(key, loop, before_time, after_time, loop_before_time, loop_after_time,
+                                 down_before_time, down_after_time, in_key_check)
+
+            Key.hold_up(re_key['shift'])
+
+            return _bool
+
+    @staticmethod
+    def re_int(_str: str | list[str]) -> False | list[int]:
+        """
+        返回一个list[int],但建议检查是否返回了False
+        还有不要提供数字(要提供切勿提供大于10的),list格式必须为一键一位
+        """
+        re = []
+        if type_check(_str, 'list') is False:
+            _str = [str(_str)]  # 避免出现来个int导致神奇的问题
+
+        for k in _str:
+            if f'key_{k}' in re_key.keys():
+                re.append(re_key[f'key_{k}'])
+            elif k in key_shift.keys():
+                re.append(key_shift[k])
+            elif k in key_cn.keys():
+                re.append(key_cn[k])
+            elif k in key_cn_shift.keys():
+                re.append(key_cn_shift[k])
             else:
-                print(f'no key:{s}')
+                print(f'键\\{k}/无对照')
                 return False
 
-        except Exception as e:
-            print(e)
+        return re
+
+    @staticmethod
+    def re_int_strs(_str: str) -> False | list[int]:
+        """
+        一句话转list
+        但基于re_int
+        所以注意是否返回了False
+        """
+        if type_check(_str, 'str') is False:
+            print('输入必须为str')
             return False
 
-    return re
+        strs = []
+        for _s in _str:
+            strs.append(_s)
+
+        return Key.re_int(strs)
 
 
 if __name__ == '__main__':
     for _i in range(1):
         print(_i)
         print(time.time())
-        # Mouse.move(x = 1000, before_time=1.0, after_time=1.0)
-        # Mouse.down(loop = 2, loop_after_time=3.0)
-        # Mouse.drag(start_x=200, end_x=500)
-        # Key.down(3, before_time=1.0, loop=3)
+        # 在两个time.time中加测试用例
         print(time.time())
     pass
