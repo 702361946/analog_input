@@ -525,47 +525,52 @@ class Key(object):
 
             return _bool
 
-    @staticmethod
-    def re_int(_str: str | list[str]) -> False | list[int]:
+    class Return(object):
         """
-        返回一个list[int],但建议检查是否返回了False
-        还有不要提供数字(要提供切勿提供大于10的),list格式必须为一键一位
+        用以返回某些东西的类
         """
-        re = []
-        if type_check(_str, 'list') is False:
-            _str = [str(_str)]  # 避免出现来个int导致神奇的问题
 
-        for k in _str:
-            if f'key_{k}' in re_key.keys():
-                re.append(re_key[f'key_{k}'])
-            elif k in key_shift.keys():
-                re.append(key_shift[k])
-            elif k in key_cn.keys():
-                re.append(key_cn[k])
-            elif k in key_cn_shift.keys():
-                re.append(key_cn_shift[k])
-            else:
-                print(f'键\\{k}/无对照')
+        @staticmethod
+        def int(_str: str | list[str]) -> bool | list[int]:
+            """
+            返回一个list[int],但建议检查是否返回了False
+            还有不要提供数字(要提供切勿提供大于等于10的),list格式必须为一键一位
+            """
+            re = []
+            if type_check(_str, 'list') is False:
+                _str = [str(_str)]  # 避免出现来个int导致神奇的问题
+
+            for k in _str:
+                if f'{k}' in re_key.keys():
+                    re.append(re_key[f'{k}'])
+                elif k in key_shift.keys():
+                    re.append(key_shift[k])
+                elif k in key_cn.keys():
+                    re.append(key_cn[k])
+                elif k in key_cn_shift.keys():
+                    re.append(key_cn_shift[k])
+                else:
+                    print(f'键\\{k}/无对照')
+                    return False
+
+            return re
+
+        @staticmethod
+        def int_strs(_str: str) -> bool | list[int]:
+            """
+            一句话转list
+            但基于re_int
+            所以注意是否返回了False
+            """
+            if type_check(_str, 'str') is False:
+                print('输入必须为str')
                 return False
 
-        return re
+            strs = []
+            for _s in _str:
+                strs.append(_s)
 
-    @staticmethod
-    def re_int_strs(_str: str) -> False | list[int]:
-        """
-        一句话转list
-        但基于re_int
-        所以注意是否返回了False
-        """
-        if type_check(_str, 'str') is False:
-            print('输入必须为str')
-            return False
-
-        strs = []
-        for _s in _str:
-            strs.append(_s)
-
-        return Key.re_int(strs)
+            return Key.Return.int(strs)
 
 
 if __name__ == '__main__':
