@@ -2,7 +2,6 @@ import os
 
 import screeninfo
 
-from _input import *
 from jsons import *
 
 script: dict = {
@@ -11,13 +10,13 @@ script: dict = {
     'developer': str,
     'email': str
 }
-global_v = {} # 全局变量
+global_v = {}  # 全局变量
 """
 name: v
 """
 
 
-def get_scripts_file_name(): # 没错,抄ai的
+def get_scripts_file_name():  # 没错,抄ai的
     # 存储找到的文件名（不包含扩展名）
     files_without_extension = []
     # 遍历scripts目录
@@ -41,12 +40,12 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
     }
     """
     try:
-        a = list(a.split(_split)) # 保证是list
+        a = list(a.split(_split))  # 保证是list
         if len(a) < 2:
             raise ValueError('检查内容,确保至少有一个参数')
         else:
             re['method'] = a[0]
-            del a[0] # 后面这玩意就全是参了
+            del a[0]  # 后面这玩意就全是参了
 
         # 转化列表,使之变为[a,a,b,b,c,c]而不是[a=a,b=b,c=c]
         t = []
@@ -60,24 +59,51 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
             """
             {
                 "name": str,
-                "message": str
+                "message": str,
+                "split": str
             }
             """
             name = None
             message = None
+            _split = None  # 可选项
             for i in range(len(a)):
+                # 添加单复数检查,确保是正确的xxx=xxx
                 if a[i] == 'name':
                     name = a[i + 1]
-                if a[i] == 'message':
+                elif a[i] == 'message':
                     message = a[i + 1]
+                elif a[i] == 'split':
+                    _split = a[i + 1]
             if name is None or message is None:
                 raise ValueError('请检查是否传入了name和message参')
+
+            if _split is not None:
+                message = message.split(_split)
             else:
-                global_v[name] = message
-                return True
+                message = [message]
+
+            t = []
+            for i in message:
+                if i[0] == '!':
+                    t.append(global_v[i[1: len(i)]])
+                else:
+                    t.append(i)
+
+            message = ''
+            for i in t:
+                message = message + i
+
+            global_v[name] = message
+            return True
 
         elif re['method'] == 'list':
-            pass
+            """
+            {
+                "name": str
+                "list": list
+            }
+            """
+
 
         elif re['method'] == 'dict':
             pass
@@ -99,6 +125,8 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
 
         else:
             raise TypeError('未知方法')
+
+        return re
 
     except Exception as e:
         print(e)
@@ -180,6 +208,7 @@ if __name__ == '__main__':
         'execute_json': False,
         'script_name': None
     }
+    # global_v['fff'] = 'eeeee'
     while True:
         script_names = get_scripts_file_name()
         for name_i in range(len(script_names)):
