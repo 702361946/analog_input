@@ -2,7 +2,6 @@ import os
 
 import screeninfo
 
-from _input import *
 from jsons import *
 
 script: dict = {
@@ -11,9 +10,13 @@ script: dict = {
     'developer': str,
     'email': str
 }
+global_v = {}  # 全局变量
+"""
+name: v
+"""
 
 
-def get_scripts_file_name():
+def get_scripts_file_name():  # 没错,抄ai的
     # 存储找到的文件名（不包含扩展名）
     files_without_extension = []
     # 遍历scripts目录
@@ -25,154 +28,173 @@ def get_scripts_file_name():
     return files_without_extension
 
 
-def parse_script(a: str) -> bool | dict:
+def parse_script(a: str, _split: str = ';') -> bool | dict:
     """
     解析单行脚本并返回dict化后的内容
-    0 mouse
-    1 key
-    2 time
     """
     re = {}
     """
     re = {
-        '_method': int,
-        'button': int,
-        'method': int,
-        'x': int | None,
-        'y': int | None,
-        'time': float,
-        'before_time': float,
-        'after_time': float,
-        'loop': int
+        'method': str,
+        'command': lambda后的可执行函数
     }
     """
-    _i = 1
     try:
-        # 鼠标
-        if a[0] == '0':
-            re['_method'] = 0
+        a = a.split(_split)
+        if len(a) < 2:
+            raise ValueError('检查内容,确保至少有一个参数')
+        else:
+            re['method'] = a[0]
+            del a[0]  # 后面这玩意就全是参了
 
-            if int(a[_i]) > 2 or int(a[_i]) < 0:
-                print('鼠标按钮未知')
-                return False
-            re['button'] = int(a[_i])
-            _i += 1
+        # 转化列表,使之变为[a,a,b,b,c,c]而不是[a=a,b=b,c=c]
+        t = []
+        for i in a:
+            f = i.split('=')
+            for _i in f:
+                t.append(_i)
+        a = t
 
-            if int(a[_i]) > 2 or int(a[_i]) < 0:
-                print('鼠标方法未知')
-                return False
-            re['method'] = int(a[_i])
-            _i += 1
+        # 变化为dict,{a: a}
+        t = {}
+        for i in range(len(a)):
+            i = i // 2 * 2  # 确保索引到a=a前面那个a
+            t[a[i]] = a[i + 1]
+        a = t
 
-            if int(a[_i]) == 0:
-                re['x'] = None
-                _i += 1
+        if re['method'] == 'str':
+            """
+            {
+                "name": str,
+                "message": str,
+                "split": str(此参可选)
+            }
+            """
+            if "name" not in a.keys() or "message" not in a.keys():
+                raise ValueError('请检查是否传入了name和message参')
             else:
-                # _i + 1即为x开头,_i为长度
-                re['x'] = int(a[_i + 1: _i + int(a[_i]) + 1])
-                _i += int(a[_i]) + 1
+                name = a['name']
+                message = a['message']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = None
 
-            if int(a[_i]) == 0:
-                re['y'] = None
-                _i += 1
+            if _split is not None:
+                message = message.split(_split)
             else:
-                # 同x
-                re['y'] = int(a[_i + 1: _i + int(a[_i]) + 1])
-                _i += int(a[_i]) + 1
+                message = [message]
 
-            if int(a[_i]) == 0:
-                re['loop'] = 1
-                _i += 1
+            t = []
+            for i in message:
+                if i[0] == '!':
+                    t.append(global_v[i[1: len(i)]])
+                else:
+                    t.append(i)
+
+            message = ''
+            for i in t:
+                message = message + i
+
+            global_v[name] = message
+            return True
+
+        elif re['method'] == 'list':
+            """
+            {
+                "name": str,
+                "list": list,
+                "split": str
+            }
+            """
+            if "name" not in a.keys() or "list" not in a.keys():
+                raise ValueError('请检查是否传入了name和list参')
             else:
-                re['loop'] = int(a[_i + 1: _i + int(a[_i]) + 1])
-                _i += int(a[_i]) + 1
+                name = a['name']
+                _list = a['list']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = ","
+                _list = _list.split(_split)
 
-            if int(a[_i]) == 0:
-                re['before_time'] = 0.0
-                _i += 1
+            t = []
+            for i in _list:
+                if i[0] == '!':
+                    t.append(global_v[i[1: len(i)]])
+                else:
+                    t.append(i)
+            _list = t
+
+            global_v[name] = _list
+            return True
+
+        elif re['method'] == 'dict':
+            """
+                {
+                    "name": str,
+                    "dict": list,
+                    "split": str,
+                    "dict_split": str
+                }
+            """
+            if "name" not in a.keys() or "dict" not in a.keys():
+                raise ValueError('请检查是否传入了name和dict参')
             else:
-                # 用round来进行小数位的舍取,以实现更为精确的数值
-                re['before_time'] = round(int(a[_i + 2: _i + int(a[_i]) + 2]) * (10 ** -int(a[_i + 1])), int(a[_i + 1]))
-                _i += int(a[_i]) + 2
+                name = a['name']
+                _dict = a['dict']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = ","
+                if "dict_split" in a.keys():
+                    dict_split = a['dict_split']
+                else:
+                    dict_split = ':'
+                _dict = _dict.split(_split)
 
-            if int(a[_i]) == 0:
-                re['after_time'] = 0.0
-                _i += 1
-            else:
-                # 同before_time
-                re['after_time'] = round(int(a[_i + 2: _i + int(a[_i]) + 2]) * (10 ** -int(a[_i + 1])), int(a[_i + 1]))
-                _i += int(a[_i]) + 2
+            # 处理键对
+            t = {}
+            for i in _dict:
+                t[i.split(dict_split)[0]] = i.split(dict_split, maxsplit=2)[1]
+            _dict = t
 
-            # 结束处理
+            for i in _dict.keys():
+                if _dict[i][0] == '!':
+                    _dict[i] = global_v[_dict[i][1: len(_dict[i])]]
 
-        # 键盘
-        elif a[0] == '1':
-            re['_method'] = 1
+            global_v[name] = _dict
+            return True
 
-            if int(a[_i]) != 0 and int(a[_i]) != 1:
-                print('按键方法未知')
-                return False
-            re['method'] = int(a[_i])
-            _i += 1
+        elif re['method'] == 'int':
+            pass
 
-            if int(a[_i]) == 0:
-                print('按键长度不为0')
-                return False
-            if int(a[_i + 1]) == 0:
-                re['button'] = Key.Return.int(a[_i + 2: _i + int(a[_i]) + 2])
-            elif int(a[_i + 1]) == 1:
-                re['button'] = Key.Return.int_strs(a[_i + 2: _i + int(a[_i]) + 2])
-            else:
-                print('按键标识未知')
-                return False
-            if re['button'] is False:
-                print(f'请检查内容\\{a[_i + 2: _i + int(a[_i]) + 2]}')
-                return False
-            _i += int(a[_i]) + 2
+        elif re['method'] == 'float':
+            pass
 
-            if int(a[_i]) == 0:
-                re['loop'] = 1
-                _i += 1
-            else:
-                re['loop'] = int(a[_i + 1: _i + int(a[_i]) + 1])
-                _i += int(a[_i]) + 1
+        elif re['method'] == 'print':
+            pass
 
-            if int(a[_i]) == 0:
-                re['before_time'] = 0.0
-                _i += 1
-            else:
-                # 用round来进行小数位的舍取,以实现更为精确的数值
-                re['before_time'] = round(int(a[_i + 2: _i + int(a[_i]) + 2]) * (10 ** -int(a[_i + 1])), int(a[_i + 1]))
-                _i += int(a[_i]) + 2
+        elif re['method'] == 'input':
+            pass
 
-            if int(a[_i]) == 0:
-                re['after_time'] = 0.0
-                _i += 1
-            else:
-                # 同before_time
-                re['after_time'] = round(int(a[_i + 2: _i + int(a[_i]) + 2]) * (10 ** -int(a[_i + 1])), int(a[_i + 1]))
-                _i += int(a[_i]) + 2
+        elif re['method'] == 'mouse':
+            pass
 
-        # 等待时间
-        elif a[0] == '2':
-            re['_method'] = 2
+        elif re['method'] == 'key':
+            pass
 
-            if int(a[_i]) == 0:
-                re['time'] = 0.0
-                _i += 1
-            else:
-                re['time'] = round(float(a[_i + 2: _i + int(a[_i]) + 2]) * 10 ** -int(a[_i + 1]), int(a[_i + 1]))
-                _i += int(a[_i]) + 2
+        elif re['method'] == 'time':
+            pass
 
         else:
-            print('未知类型')
-            return False
+            raise TypeError('未知方法')
 
-    except ValueError:
-        print(f'值错误\\i{_i}')
+        return re
+
+    except Exception as e:
+        print(e)
         return False
-
-    return re
 
 
 def run(execute: dict, get_execute: bool = False) -> bool:
@@ -184,7 +206,7 @@ def run(execute: dict, get_execute: bool = False) -> bool:
             print(f'脚本信息\n"""\n{execute["info"]}\n"""')
 
         for i in range(execute['step']):
-            print(f'初始化脚本\\{execute['step']}\\{i}')
+            print(f'初始化脚本\\step:{i}')
             if f'{i}' in execute.keys():
                 execute[f'{i}'] = parse_script(execute[f'{i}'])
             else:
@@ -216,7 +238,7 @@ def run(execute: dict, get_execute: bool = False) -> bool:
             _x_h = user_h / int(execute_h)
 
             for _i in range(execute['step']):
-                if execute[str(_i)]['_method'] == 0:
+                if execute[str(_i)]['method'] == 'mouse':
                     if execute[str(_i)]['x'] is not None:
                         execute[str(_i)]['x'] = execute[str(_i)]['x'] * _x_w
                     if execute[str(_i)]['y'] is not None:
@@ -229,48 +251,19 @@ def run(execute: dict, get_execute: bool = False) -> bool:
 
     for _i in range(execute['step']):
         i = execute[f'{_i}']
-        if i['_method'] == 0:
-            if i['method'] == 0:
-                Mouse.move(
-                    x=i['x'],
-                    y=i['y'],
-                    before_time=i['before_time'],
-                    after_time=i['after_time']
-                )
-            elif i['method'] == 1:
-                Mouse.down(
-                    x=i['x'],
-                    y=i['y'],
-                    before_time=i['before_time'],
-                    after_time=i['after_time'],
-                    button=i['button'],
-                    loop=i['loop']
-                )
-            elif i['method'] == 2:
-                Mouse.hold_re(
-                    x=i['x'],
-                    y=i['y'],
-                    before_time=i['before_time'],
-                    after_time=i['after_time'],
-                    button=i['button'],
-                )
-
-        if i['_method'] == 1:
-            if i['method'] == 0:
-                Key.Down.all(
-                    key=i['button'],
-                    loop=i['loop'],
-                    before_time=i['before_time'],
-                    after_time=i['after_time']
-                )
-            elif i['method'] == 1:
-                time.sleep(i['before_time'])
-                for k in i['button']:
-                    Key.hold_re(key=k)
-                time.sleep(i['after_time'])
-
-        if i['_method'] == 2:
-            time.sleep(i['time'])
+        if i['method'] == 'print':
+            pass
+        elif i['method'] == 'input':
+            pass
+        elif i['method'] == 'mouse':
+            pass
+        elif i['method'] == 'key':
+            pass
+        elif i['method'] == 'time':
+            pass
+        else:
+            print('可能为无输出方法')
+            pass
 
     return True
 
@@ -279,12 +272,14 @@ if __name__ == '__main__':
         'execute_json': False,
         'script_name': None
     }
+    # global_v['fff'] = 'eeeee'
     while True:
         script_names = get_scripts_file_name()
         for name_i in range(len(script_names)):
             print(f'{name_i} : {script_names[name_i]}')
 
-        user_input = input('输入脚本编号(输入exit退出程序)')
+        # user_input = input('输入脚本编号(输入exit退出程序)')
+        user_input = '0'
         if user_input == 'exit':
             break
         elif user_input.isdigit():
