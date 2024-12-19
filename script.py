@@ -40,7 +40,7 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
     }
     """
     try:
-        a = list(a.split(_split))  # 保证是list
+        a = a.split(_split)
         if len(a) < 2:
             raise ValueError('检查内容,确保至少有一个参数')
         else:
@@ -55,27 +55,30 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
                 t.append(_i)
         a = t
 
+        # 变化为dict,{a: a}
+        t = {}
+        for i in range(len(a)):
+            i = i // 2 * 2  # 确保索引到a=a前面那个a
+            t[a[i]] = a[i + 1]
+        a = t
+
         if re['method'] == 'str':
             """
             {
                 "name": str,
                 "message": str,
-                "split": str
+                "split": str(此参可选)
             }
             """
-            name = None
-            message = None
-            _split = None  # 可选项
-            for i in range(len(a)):
-                # 添加单复数检查,确保是正确的xxx=xxx
-                if a[i] == 'name':
-                    name = a[i + 1]
-                elif a[i] == 'message':
-                    message = a[i + 1]
-                elif a[i] == 'split':
-                    _split = a[i + 1]
-            if name is None or message is None:
+            if "name" not in a.keys() or "message" not in a.keys():
                 raise ValueError('请检查是否传入了name和message参')
+            else:
+                name = a['name']
+                message = a['message']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = None
 
             if _split is not None:
                 message = message.split(_split)
@@ -99,13 +102,74 @@ def parse_script(a: str, _split: str = ';') -> bool | dict:
         elif re['method'] == 'list':
             """
             {
-                "name": str
-                "list": list
+                "name": str,
+                "list": list,
+                "split": str
             }
             """
+            if "name" not in a.keys() or "list" not in a.keys():
+                raise ValueError('请检查是否传入了name和list参')
+            else:
+                name = a['name']
+                _list = a['list']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = ","
+                _list = _list.split(_split)
 
+            t = []
+            for i in _list:
+                if i[0] == '!':
+                    t.append(global_v[i[1: len(i)]])
+                else:
+                    t.append(i)
+            _list = t
+
+            global_v[name] = _list
+            return True
 
         elif re['method'] == 'dict':
+            """
+                {
+                    "name": str,
+                    "dict": list,
+                    "split": str,
+                    "dict_split": str
+                }
+            """
+            if "name" not in a.keys() or "dict" not in a.keys():
+                raise ValueError('请检查是否传入了name和dict参')
+            else:
+                name = a['name']
+                _dict = a['dict']
+                if "split" in a.keys():
+                    _split = a['split']
+                else:
+                    _split = ","
+                if "dict_split" in a.keys():
+                    dict_split = a['dict_split']
+                else:
+                    dict_split = ':'
+                _dict = _dict.split(_split)
+
+            # 处理键对
+            t = {}
+            for i in _dict:
+                t[i.split(dict_split)[0]] = i.split(dict_split, maxsplit=2)[1]
+            _dict = t
+
+            for i in _dict.keys():
+                if _dict[i][0] == '!':
+                    _dict[i] = global_v[_dict[i][1: len(_dict[i])]]
+
+            global_v[name] = _dict
+            return True
+
+        elif re['method'] == 'int':
+            pass
+
+        elif re['method'] == 'float':
             pass
 
         elif re['method'] == 'print':
@@ -214,8 +278,8 @@ if __name__ == '__main__':
         for name_i in range(len(script_names)):
             print(f'{name_i} : {script_names[name_i]}')
 
-        user_input = input('输入脚本编号(输入exit退出程序)')
-        # user_input = '0'
+        # user_input = input('输入脚本编号(输入exit退出程序)')
+        user_input = '0'
         if user_input == 'exit':
             break
         elif user_input.isdigit():
