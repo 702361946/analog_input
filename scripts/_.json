@@ -2,7 +2,10 @@
     "developer": "702361946",
     "email": "702361946@qq.com",
     "info": "这是一个示例",
-    "resolution": "1920x1080",
-    "step": 1,
-    "0": "示例你还想要实际操作?"
+    "resolution": "1366x768",
+    "split": ";",
+    "step": 3,
+    "0": "mouse;mode=move;x=650;y=380",
+    "1": "print;message=1",
+    "2": "print;message=2"
 }
