@@ -1,7 +1,4 @@
 def type_check(a, _type: str) -> bool:
-    if type(a).__name__ == _type:
-        return True
-    else:
-        return False
+    return type(a).__name__ == _type
 
-# 这玩意……
+# 貌似没什么用的样子……
