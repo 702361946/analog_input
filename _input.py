@@ -541,8 +541,8 @@ class Key(object):
                 _str = [str(_str)]  # 避免出现来个int导致神奇的问题
 
             for k in _str:
-                if f'{k}' in re_key.keys():
-                    re.append(re_key[f'{k}'])
+                if k in re_key.keys():
+                    re.append(re_key[k])
                 elif k in key_shift.keys():
                     re.append(key_shift[k])
                 elif k in key_cn.keys():
@@ -559,7 +559,7 @@ class Key(object):
         def int_strs(_str: str) -> bool | list[int]:
             """
             一句话转list
-            但基于re_int
+            但基于int
             所以注意是否返回了False
             """
             if type_check(_str, 'str') is False:
