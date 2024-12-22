@@ -1,8 +1,9 @@
 import os
+import time
 
 import screeninfo
 
-from _input import Mouse, global_time
+from _input import Mouse, global_time, Key
 from jsons import *
 
 script: dict = {
@@ -11,6 +12,8 @@ script: dict = {
     'developer': str,
     'email': str
 }
+global_step = {'step': 0}  # 方便通过函数修改
+global_execute = {}
 global_value = {}  # 全局变量
 """
 name: v
@@ -523,13 +526,139 @@ def parse_script(a: str, _split: str = ';', _x_h: float = 1, _x_w: float = 1) ->
                     raise TypeError('未知模式')
 
         elif re['method'] == 'key':
-            pass
+            """
+            {
+            'mode': str,(必填)
+            'key': int | list,(必填)
+            'key_one': bool,(可选,默认False)
+            'loop': int,(可选)
+            'before_time': float,(可选)
+            'after_time': float,(可选)
+            'loop_before_time': float,(可选)
+            'loop_after_time': float,(可选)
+            'down_before_time': float,(可选)
+            'down_after_time': float,(可选)
+            }
+            """
+            key_one = False
+            if "mode" not in a.keys() or "key" not in a.keys():
+                raise ValueError('请检查是否传入了mode和key参')
+            else:
+                mode = a['mode']
+                key = a['key']
+            if 'key_one' in a.keys():
+                key_one = bool(a['key_one'])
+            if key_one:
+                key = Key.Return.int(key)
+            else:
+                key = Key.Return.int_strs(key)
+
+            match mode:
+                case 'down':
+                    """
+                    {
+                        'key': list,
+                        'loop': int,
+                        'before_time': float,
+                        'after_time': float,
+                        'loop_before_time': float,
+                        'loop_after_time': float,
+                        'down_before_time': float,
+                        'down_after_time': float,
+                    }
+                    """
+                    loop = 1
+                    before_time = global_time
+                    after_time = global_time
+                    loop_before_time = global_time
+                    loop_after_time = global_time
+                    down_before_time = global_time
+                    down_after_time = global_time
+                    if 'loop' in a.keys():
+                        loop = int(a['loop'])
+                    if 'before_time' in a.keys():
+                        before_time = float(a['before_time'])
+                    if 'after_time' in a.keys():
+                        after_time = float(a['after_time'])
+                    if 'loop_before_time' in a.keys():
+                        loop_before_time = float(a['loop_before_time'])
+                    if 'loop_after_time' in a.keys():
+                        loop_after_time = float(a['loop_after_time'])
+                    if 'down_before_time' in a.keys():
+                        down_before_time = float(a['down_before_time'])
+                    if 'down_after_time' in a.keys():
+                        down_after_time = float(a['down_after_time'])
+
+                    re['command'] = lambda: Key.Down.all(
+                        key=key,
+                        loop=loop,
+                        before_time=before_time,
+                        after_time=after_time,
+                        loop_before_time=loop_before_time,
+                        loop_after_time=loop_after_time,
+                        down_before_time=down_before_time,
+                        down_after_time=down_after_time,
+                    )
+
+                case 'hold':
+                    """
+                    {
+                        'key': int,
+                        'before_time': float,
+                        'after_time': float,
+                    }
+                    """
+                    before_time = global_time
+                    after_time = global_time
+                    if len(key) > 1:
+                        raise ValueError('hold模式下key只能有一个键,而不是一段话')
+                    else:
+                        key = key[0]  # 貌似有点抽象,但不想换int
+                    if 'before_time' in a.keys():
+                        before_time = float(a['before_time'])
+                    if 'after_time' in a.keys():
+                        after_time = float(a['after_time'])
+
+                    re['command'] = lambda: Key.hold_re(
+                        key=key,
+                        before_time=before_time,
+                        after_time=after_time
+                    )
+
+                case _:
+                    raise TypeError('未知模式')
 
         elif re['method'] == 'time':
-            pass
+            """
+            {
+                'time': float
+            }
+            """
+            if 'time' not in a.keys():
+                raise ValueError('请提供参time')
+            else:
+                _time = float(a['time'])
 
-        elif re['method'] == 'if':
-            pass
+                re['command'] = lambda: time.sleep(_time)
+
+        elif re['method'] == 'goto':
+            """
+            {
+                'step': int
+            }
+            """
+            if 'step' not in a.keys():
+                raise ValueError('请提供参step')
+            else:
+                step = int(a['step'])
+
+                def __temp(_step):
+                    global_step['step'] = _step
+
+                re['command'] = lambda: __temp(step)
+
+        # elif re['method'] == 'if':
+        #     pass
 
         else:
             raise TypeError('未知方法')
@@ -585,15 +714,22 @@ def run(execute: dict, get_execute: bool = False) -> bool:
 
                 return False
 
+        # 覆盖global_execute
+        for k in global_execute.keys():
+            del global_execute[k]
+        for k in execute.keys():
+            global_execute[k] = execute[k]
+
         print('初始化完成')
 
     input('按下回车开始执行')
-
-    for _i in range(execute['step']):
-        i = execute[f'{_i}']
+    global_step['step'] = 0
+    while global_step['step'] < execute['step']:
+        i = execute[f'{global_step["step"]}']
         if type(i).__name__ == 'dict':
             if 'command' in i.keys():
                 i['command']()
+        global_step['step'] += 1
 
     return True
 
@@ -617,7 +753,7 @@ if __name__ == '__main__':
                 script_name = script_names[int(user_input)]
                 if user_script['execute_json'] and user_script['script_name'] == script_name:
                     # 用来减少重复使用同一脚本时
-                    run(r_json('execute'), get_execute=True)
+                    run(global_execute, get_execute=True)
                 else:
                     script = r_json(f'scripts\\{script_name}')
                     if script is not None:
