@@ -345,9 +345,9 @@ def parse_script(a: str, _split: str = ';', _x_h: float = 1, _x_w: float = 1) ->
                         raise ValueError('请检查是否传入了x和y参')
                     else:
                         if a['x'] != 'None':
-                            x = int(a['x'] * _x_w)
+                            x = int(int(a['x']) * _x_w)
                         if a['y'] != 'None':
-                            y = int(a['y'] * _x_h)
+                            y = int(int(a['y']) * _x_h)
                     if 'relative_if' in a.keys() and 'relative_if' == 'True':
                         relative_if = True
                     if 'before_time' in a.keys():
@@ -388,9 +388,9 @@ def parse_script(a: str, _split: str = ';', _x_h: float = 1, _x_w: float = 1) ->
                         raise ValueError('请检查是否传入了x和y参')
                     else:
                         if a['x'] != 'None':
-                            x = int(a['x'] * _x_w)
+                            x = int(int(a['x']) * _x_w)
                         if a['y'] != 'None':
-                            y = int(a['y'] * _x_h)
+                            y = int(int(a['y']) * _x_h)
                     if 'before_time' in a.keys():
                         before_time = float(a['before_time'])
                     if 'after_time' in a.keys():
@@ -434,10 +434,10 @@ def parse_script(a: str, _split: str = ';', _x_h: float = 1, _x_w: float = 1) ->
                     y = None
                     if 'x' in a.keys():
                         if a['x'] != 'None':
-                            x = int(a['x'] * _x_w)
+                            x = int(int(a['x']) * _x_w)
                     if 'y' in a.keys():
                         if a['y'] != 'None':
-                            y = int(a['y'] * _x_h)
+                            y = int(int(a['y']) * _x_h)
                     if 'before_time' in a.keys():
                         before_time = float(a['before_time'])
                     if 'after_time' in a.keys():
@@ -483,10 +483,10 @@ def parse_script(a: str, _split: str = ';', _x_h: float = 1, _x_w: float = 1) ->
                     if "end_x" not in a.keys() or 'end_y' not in a.keys():
                         raise ValueError('请检查是否传入了end_x和end_y参')
                     else:
-                        if a['end_x'] != 'None':
-                            x = int(a['x'] * _x_w)
-                        if a['end_y'] != 'None':
-                            y = int(a['y'] * _x_w)
+                        if a['x'] != 'None':
+                            x = int(int(a['x']) * _x_w)
+                        if a['y'] != 'None':
+                            y = int(int(a['y']) * _x_h)
                     if 'start_x' in a.keys():
                         start_x = int(a['start_x'])
                     if 'start_y' in a.keys():
