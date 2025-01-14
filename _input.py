@@ -531,7 +531,7 @@ class Key(object):
         """
 
         @staticmethod
-        def int(_str: str | list[str]) -> bool | list[int]:
+        def _int(_str: str | list[str]) -> bool | list[int]:
             """
             返回一个list[int],但建议检查是否返回了False
             还有不要提供数字(要提供切勿提供大于等于10的),list格式必须为一键一位
@@ -556,7 +556,7 @@ class Key(object):
             return re
 
         @staticmethod
-        def int_strs(_str: str) -> bool | list[int]:
+        def _int_strs(_str: str) -> bool | list[int]:
             """
             一句话转list
             但基于int
@@ -570,7 +570,7 @@ class Key(object):
             for _s in _str:
                 strs.append(_s)
 
-            return Key.Return.int(strs)
+            return Key.Return._int(strs)
 
 
 if __name__ == '__main__':

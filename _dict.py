@@ -66,6 +66,7 @@ key_button = {
     109: 'backspace',
     110: 'space',  # 空格
     111: 'enter',
+    112: 'esc',
     # F1~F12
     120: 'f1',
     121: 'f2',
